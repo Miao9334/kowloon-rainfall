@@ -1,34 +1,25 @@
-# The phenomenon
+# Kowloon Hourly Rainfall Data Visualization
 
-<!-- This is the SD5913 assignment 2 template. Everything in this file is yours to
-replace, and the check counts words: comments like this one are not words, so
-delete each one as you write. Start with the heading: name the phenomenon.
+This repository is built for Assignment 2 of the Programming for Art and Design course. It collects, stores, and visualizes real-time weather observation metrics for districts across Kowloon, Hong Kong.
 
-Then, in this order, at least 150 words in total.
+## Phenomenon and Data Source
 
-New to folders, paths, or the files here whose names start with a dot? Read
-https://github.com/sd5913/pfad/blob/2026/reference/files.md first. Ten minutes. -->
+- **Phenomenon**: Hourly rainfall and localized meteorological observations in the Kowloon region of Hong Kong.
+- **Data Source**: Official open-data API feed provided by the [Hong Kong Observatory (HKO)](https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en).
 
-![what the picture is](out/plot.png)
+The data is fetched as a raw JSON format via the official HKO endpoint. In accordance with the course guidelines, the raw data file is saved locally in the `data/` directory upon the first request to avoid repeated network calls and ensure offline reproducibility.
 
-## The phenomenon
+## Generated Visualization
 
-<!-- What goes up and down, and why you looked at it. -->
+Below is the latest generated bar chart displaying the rainfall measurements across key weather stations in Kowloon:
 
-## The source
+![Kowloon Hourly Rainfall](out/plot.png)
 
-<!-- A link to the page or endpoint the file came from, and one line on what is in
-the file: how many rows, what a row means, what the units are. -->
+The visualization reads the cached raw JSON dataset, extracts localized station metrics, filters out relevant Kowloon districts (such as Kowloon City, Wong Tai Sin, Kwun Tong, Sham Shui Po, and Yau Tsim Mong), and outputs a cleaned bar chart saved to `out/plot.png`.
 
-## What the picture shows
+## How to Run the Project
 
-<!-- Two or three sentences. Including what it hides: every transformation throws
-something away, and naming what yours threw away is the easiest way to sound like
-you know what you did. -->
-
-## Run it
-
-```
-uv run fetch.py
-uv run plot.py
-```
+1. **Fetch Raw Data**:
+   Download the latest raw JSON response from the HKO API:
+   ```bash
+   uv run fetch.py
