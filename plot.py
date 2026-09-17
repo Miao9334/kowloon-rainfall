@@ -3,64 +3,79 @@
 # dependencies = ["matplotlib"]
 # ///
 
-"""
-Read the file in data/, make one picture, save it to out/.
-
-    uv run plot.py
-
-Three parts, and you will replace all three: rows() reads the file the way *your*
-file needs reading, the loop in main() picks the numbers out of it, and the plot at
-the bottom is the transformation you chose. Print before you plot.
-"""
-
-import csv
+import json
 from pathlib import Path
-
 import matplotlib.pyplot as plt
 
-FILE = "hko-daily-mean-temperature-2026.csv"   # CHANGE ME: the same name as in fetch.py
-PICTURE = "plot.png"                           # what goes into out/, and into the README
-
 HERE = Path(__file__).parent
-DATA = HERE / "data" / FILE
-OUT = HERE / "out"
+DATA_FILE = HERE / "data" / "kowloon_rainfall.json"
+OUT_DIR = HERE / "out"
+OUT_DIR.mkdir(exist_ok=True)
 
-
-def rows(path):
-    """The file as a list of lists, one per line. The Observatory puts three lines
-    of titles above the table and a legend below it, so keep only the lines that
-    start with a year."""
-    kept = []
-    with path.open(encoding="utf-8-sig", newline="") as handle:
-        for line in csv.reader(handle):
-            if line and line[0].isdigit():
-                kept.append(line)
-    return kept
+# Main weather stations in Kowloon region
+KOWLOON_STATIONS = [
+    "Kowloon City",
+    "Wong Tai Sin",
+    "Kwun Tong",
+    "Sham Shui Po",
+    "Yau Tsim Mong",
+]
 
 
 def main():
-    table = rows(DATA)
-    print(f"{DATA.name}: {len(table)} rows. The first one: {table[0]}")
+    if not DATA_FILE.exists():
+        print(f"Data file not found: {DATA_FILE}. Please run fetch.py first.")
+        return
 
-    days, values = [], []
-    for i, (year, month, day, value, quality) in enumerate(table):   # the loop over the numbers
-        if value == "***":                   # the Observatory's word for "missing"
-            continue
-        days.append(i + 1)
-        values.append(float(value))          # it arrived as text; make it a number
-    print(f"{len(values)} values, from {min(values)} to {max(values)}")
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
-    fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(days, values, color="#d6591d", linewidth=1.5)
-    ax.set_xlabel("day of 2026")
-    ax.set_ylabel("daily mean temperature, °C")
-    ax.set_title("Hong Kong Observatory, 2026 so far")
-    fig.tight_layout()
+    # Extract rainfall section from API data
+    rainfall_data = data.get("rainfall", {}).get("data", [])
 
-    OUT.mkdir(exist_ok=True)
-    fig.savefig(OUT / PICTURE, dpi=150)
-    print(f"saved out/{PICTURE}")
-    plt.show()
+    stations = []
+    rainfall_values = []
+
+    # Filter for Kowloon stations
+    for place in rainfall_data:
+        station_name = place.get("place", "")
+        if any(ks.lower() in station_name.lower() for ks in KOWLOON_STATIONS):
+            val = place.get("max", 0)
+            stations.append(station_name)
+            rainfall_values.append(val)
+
+    # Fallback: take first 5 stations if Kowloon names differ
+    if not stations:
+        for place in rainfall_data[:5]:
+            stations.append(place.get("place", "Station"))
+            rainfall_values.append(place.get("max", 0))
+
+    # Plotting chart
+    plt.figure(figsize=(9, 5))
+    bars = plt.bar(stations, rainfall_values, color="#3498db", edgecolor="#2980b9")
+
+    # Pure English Title & Axis Labels
+    plt.title("Kowloon Hourly Rainfall (mm)")
+    plt.xlabel("Kowloon Weather Station")
+    plt.ylabel("Rainfall (mm)")
+    plt.ylim(0, max(rainfall_values) + 5 if rainfall_values else 10)
+    plt.xticks(rotation=20, ha="right")
+    plt.grid(axis="y", linestyle="--", alpha=0.5)
+
+    # Display numeric values on top of bars
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(
+            bar.get_x() + bar.get_width() / 2.0,
+            height + 0.1,
+            f"{height} mm",
+            ha="center",
+            va="bottom",
+        )
+
+    out_path = OUT_DIR / "plot.png"
+    plt.savefig(out_path, dpi=200, bbox_inches="tight")
+    print(f"Chart saved successfully to {out_path}")
 
 
 if __name__ == "__main__":
